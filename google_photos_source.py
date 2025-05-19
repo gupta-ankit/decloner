@@ -11,7 +11,10 @@ import pickle
 from image_source import ImageSource
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/photoslibrary.readonly',
+    'https://www.googleapis.com/auth/photoslibrary'  # For delete operations
+]
 
 class GooglePhotosImageSource(ImageSource):
     """Implementation of ImageSource for Google Photos"""

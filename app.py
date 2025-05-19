@@ -55,16 +55,6 @@ class DeclonerApp:
         self.delete_button.pack(side="left", padx=5)
         self.delete_button.config(state="disabled")
 
-        # Select All checkbox
-        self.select_all_var = tk.BooleanVar()
-        self.select_all_checkbox = ttk.Checkbutton(
-            control_frame, 
-            text="Select All", 
-            variable=self.select_all_var,
-            command=self.toggle_select_all
-        )
-        self.select_all_checkbox.pack(side="left", padx=5)
-
         # Status label
         self.status_label = ttk.Label(control_frame, text="")
         self.status_label.pack(side="left", padx=5)
@@ -123,10 +113,6 @@ class DeclonerApp:
 
         # Load images and find similar ones
         self.engine.load_images(folder_path)
-        similar_pairs = self.engine.find_similar_images()
-
-        # Group similar images
-        groups = self.group_similar_images(similar_pairs)
         
         # Display groups
         self.display_image_groups(folder_path, groups)
@@ -134,29 +120,6 @@ class DeclonerApp:
         self.status_label.config(text=f"Found {len(groups)} groups of similar images")
         self.delete_button.config(state="normal")
 
-    def group_similar_images(self, similar_pairs):
-        # Create groups of similar images
-        groups = []
-        used_images = set()
-
-        for img1, img2, distance in similar_pairs:
-            # Find if any of the images are in existing groups
-            found_group = False
-            for group in groups:
-                if img1 in group or img2 in group:
-                    group.add(img1)
-                    group.add(img2)
-                    found_group = True
-                    break
-            
-            if not found_group:
-                # Create new group
-                groups.append({img1, img2})
-            
-            used_images.add(img1)
-            used_images.add(img2)
-
-        return groups
 
     def display_image_groups(self, folder_path, groups):
         for i, group in enumerate(groups):

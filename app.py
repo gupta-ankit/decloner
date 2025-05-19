@@ -80,7 +80,6 @@ class DeclonerApp:
             widget.destroy()
         self.thumbnail_refs.clear()
         self.checkboxes.clear()
-        self.select_all_var.set(False)
         self.delete_button.config(state="disabled")
 
     def refresh_display(self):
@@ -113,7 +112,7 @@ class DeclonerApp:
 
         # Load images and find similar ones
         self.engine.load_images(folder_path)
-        
+        groups = self.engine.group_similar_images()
         # Display groups
         self.display_image_groups(folder_path, groups)
         
@@ -154,11 +153,6 @@ class DeclonerApp:
                     # Display filename
                     name_label = ttk.Label(img_frame, text=img_name, wraplength=100)
                     name_label.pack()
-
-    def toggle_select_all(self):
-        select_all = self.select_all_var.get()
-        for var in self.checkboxes.values():
-            var.set(select_all)
 
     def delete_selected(self):
         selected_files = [path for path, var in self.checkboxes.items() if var.get()]

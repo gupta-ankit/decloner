@@ -4,24 +4,66 @@
 import os
 from PIL import Image
 import imagehash
+import numpy as np
+from typing import List, Dict, Any
+from image_source import ImageSource
 
 class ImageSimilarityEngine:
-    def __init__(self, hash_func=imagehash.phash):
-        self.hash_func = hash_func
-        self.image_data = []  # List of tuples: (filename, imagehash)
+    def __init__(self):
+        self.images = {}  # Dictionary to store image data
+        self.image_source = None
 
-    def load_images(self, folder_path):
-        self.image_data.clear()
-        for filename in os.listdir(folder_path):
-            path = os.path.join(folder_path, filename)
-            if not os.path.isfile(path):
-                continue
+    def load_images_from_source(self, image_source: ImageSource, image_ids: List[str]):
+        """Load images from the given image source"""
+        self.image_source = image_source
+        self.images.clear()
+        
+        for image_id in image_ids:
             try:
-                with Image.open(path) as img:
-                    img_hash = self.hash_func(img)
-                    self.image_data.append((filename, img_hash))
+                img = image_source.get_image(image_id)
+                if img:
+                    # Convert image to RGB if it's not
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    # Resize to a standard size for comparison
+                    img = img.resize((100, 100))
+                    # Convert to numpy array
+                    self.images[image_id] = np.array(img)
             except Exception as e:
-                print(f"Failed to load {filename}: {e}")
+                print(f"Failed to load image {image_id}: {e}")
+
+    def compute_similarity(self, img1: np.ndarray, img2: np.ndarray) -> float:
+        """Compute similarity between two images using mean squared error"""
+        return np.mean((img1 - img2) ** 2)
+
+    def group_similar_images(self, threshold: float = 1000.0) -> List[List[str]]:
+        """Group similar images together"""
+        if not self.images:
+            return []
+
+        groups = []
+        processed = set()
+
+        for img1_id, img1_data in self.images.items():
+            if img1_id in processed:
+                continue
+
+            current_group = [img1_id]
+            processed.add(img1_id)
+
+            for img2_id, img2_data in self.images.items():
+                if img2_id in processed:
+                    continue
+
+                similarity = self.compute_similarity(img1_data, img2_data)
+                if similarity < threshold:
+                    current_group.append(img2_id)
+                    processed.add(img2_id)
+
+            if len(current_group) > 1:  # Only add groups with more than one image
+                groups.append(current_group)
+
+        return groups
 
     def find_similar_images(self, threshold=5):
         similar_pairs = []

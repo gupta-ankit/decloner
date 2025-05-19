@@ -93,6 +93,24 @@ class DeclonerApp:
         self.select_all_var.set(False)
         self.delete_button.config(state="disabled")
 
+    def refresh_display(self):
+        # Clear current display
+        for widget in self.scroll_frame.scrollable_frame.winfo_children():
+            widget.destroy()
+        self.thumbnail_refs.clear()
+        self.checkboxes.clear()
+
+        # Only display groups that still have 2 or more images
+        valid_groups = [group for group in self.current_groups if len(group) >= 2]
+        self.current_groups = valid_groups
+
+        if self.current_groups:
+            self.display_image_groups(self.current_folder, self.current_groups)
+            self.delete_button.config(state="normal")
+        else:
+            self.status_label.config(text="No similar images found")
+            self.delete_button.config(state="disabled")
+
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         if not folder_path:
@@ -193,14 +211,19 @@ class DeclonerApp:
             for file_path in selected_files:
                 try:
                     os.remove(file_path)
+                    # Remove the file from its group
+                    filename = os.path.basename(file_path)
+                    for group in self.current_groups:
+                        if filename in group:
+                            group.remove(filename)
                     deleted_count += 1
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to delete {os.path.basename(file_path)}: {str(e)}")
 
-            # Refresh the view
+            # Refresh the display without reopening folder dialog
             if deleted_count > 0:
                 messagebox.showinfo("Success", f"Successfully deleted {deleted_count} images.")
-                self.select_folder()  # Refresh the current folder
+                self.refresh_display()
             
             self.status_label.config(text=f"Deleted {deleted_count} images")
 

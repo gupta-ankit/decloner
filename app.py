@@ -35,6 +35,10 @@ class ImageSimilarityApp:
         # Store thumbnails to prevent garbage collection
         self.thumbnail_refs = []
         
+        # Store checkboxes and their variables
+        self.checkboxes = {}
+        self.current_folder = None
+
         # Create main layout
         self.create_widgets()
 
@@ -45,6 +49,21 @@ class ImageSimilarityApp:
 
         self.select_button = ttk.Button(control_frame, text="Select Folder", command=self.select_folder)
         self.select_button.pack(side="left", padx=5)
+
+        # Delete button
+        self.delete_button = ttk.Button(control_frame, text="Delete Selected", command=self.delete_selected)
+        self.delete_button.pack(side="left", padx=5)
+        self.delete_button.config(state="disabled")
+
+        # Select All checkbox
+        self.select_all_var = tk.BooleanVar()
+        self.select_all_checkbox = ttk.Checkbutton(
+            control_frame, 
+            text="Select All", 
+            variable=self.select_all_var,
+            command=self.toggle_select_all
+        )
+        self.select_all_checkbox.pack(side="left", padx=5)
 
         # Status label
         self.status_label = ttk.Label(control_frame, text="")
@@ -70,12 +89,16 @@ class ImageSimilarityApp:
         for widget in self.scroll_frame.scrollable_frame.winfo_children():
             widget.destroy()
         self.thumbnail_refs.clear()
+        self.checkboxes.clear()
+        self.select_all_var.set(False)
+        self.delete_button.config(state="disabled")
 
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         if not folder_path:
             return
 
+        self.current_folder = folder_path
         self.clear_results()
         self.status_label.config(text="Processing images...")
         self.root.update()
@@ -91,6 +114,7 @@ class ImageSimilarityApp:
         self.display_image_groups(folder_path, groups)
         
         self.status_label.config(text=f"Found {len(groups)} groups of similar images")
+        self.delete_button.config(state="normal")
 
     def group_similar_images(self, similar_pairs):
         # Create groups of similar images
@@ -136,6 +160,12 @@ class ImageSimilarityApp:
                     img_frame = ttk.Frame(thumbs_frame)
                     img_frame.pack(side="left", padx=5)
                     
+                    # Add checkbox for selection
+                    var = tk.BooleanVar()
+                    checkbox = ttk.Checkbutton(img_frame, variable=var)
+                    checkbox.pack()
+                    self.checkboxes[img_path] = var
+                    
                     # Display thumbnail
                     label = ttk.Label(img_frame, image=thumb)
                     label.pack()
@@ -143,6 +173,36 @@ class ImageSimilarityApp:
                     # Display filename
                     name_label = ttk.Label(img_frame, text=img_name, wraplength=100)
                     name_label.pack()
+
+    def toggle_select_all(self):
+        select_all = self.select_all_var.get()
+        for var in self.checkboxes.values():
+            var.set(select_all)
+
+    def delete_selected(self):
+        selected_files = [path for path, var in self.checkboxes.items() if var.get()]
+        
+        if not selected_files:
+            messagebox.showwarning("No Selection", "Please select at least one image to delete.")
+            return
+
+        if messagebox.askyesno("Confirm Deletion", 
+                             f"Are you sure you want to delete {len(selected_files)} selected images?\n"
+                             "This action cannot be undone."):
+            deleted_count = 0
+            for file_path in selected_files:
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to delete {os.path.basename(file_path)}: {str(e)}")
+
+            # Refresh the view
+            if deleted_count > 0:
+                messagebox.showinfo("Success", f"Successfully deleted {deleted_count} images.")
+                self.select_folder()  # Refresh the current folder
+            
+            self.status_label.config(text=f"Deleted {deleted_count} images")
 
 if __name__ == "__main__":
     root = tk.Tk()

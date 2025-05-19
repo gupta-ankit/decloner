@@ -25,7 +25,7 @@ class ScrollableFrame(ttk.Frame):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-class ImageSimilarityApp:
+class DeclonerApp:
     def __init__(self, root):
         self.engine = ImageSimilarityEngine()
         self.root = root
@@ -206,6 +206,6 @@ class ImageSimilarityApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = ImageSimilarityApp(root)
+    app = DeclonerApp(root)
     root.mainloop()
 
